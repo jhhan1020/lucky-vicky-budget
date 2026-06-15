@@ -377,6 +377,37 @@
       opacity: 0.7;
     }
 
+    /* 차트 카드 */
+    .chart-wrapper {
+      position: relative;
+      height: 220px;
+    }
+
+    .chart-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .chart-tab {
+      padding: 5px 14px;
+      border: 2px solid #fce7f3;
+      border-radius: 20px;
+      background: white;
+      font-family: 'Jua', sans-serif;
+      font-size: 0.8rem;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .chart-tab.active {
+      background: linear-gradient(135deg, #ff6eb4, #c084fc);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 3px 10px rgba(255,110,180,0.3);
+    }
+
     /* 행운 뱃지 */
     .lucky-badge {
       display: flex;
@@ -465,6 +496,18 @@
       <button class="add-btn" onclick="addTransaction()">🍀 럭키하게 추가!</button>
     </div>
 
+    <!-- 차트 -->
+    <div class="card">
+      <div class="card-title">📊 수입 · 지출 추이</div>
+      <div class="chart-tabs">
+        <button class="chart-tab active" onclick="setChartMode('monthly', this)">월별</button>
+        <button class="chart-tab" onclick="setChartMode('category', this)">카테고리</button>
+      </div>
+      <div class="chart-wrapper">
+        <canvas id="myChart"></canvas>
+      </div>
+    </div>
+
     <!-- 거래 목록 -->
     <div class="card">
       <div class="list-header">
@@ -482,6 +525,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
     const SUPABASE_URL  = 'https://ktxribajxuxawjqfylfo.supabase.co';
     const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0eHJpYmFqeHV4YXdqcWZ5bGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NzkxMzYsImV4cCI6MjA5NzA1NTEzNn0.g12wnoWBG5NDCv31FzKWPWE3vevmeSQzthQEalXGRWY';
@@ -504,7 +548,7 @@
         .select('*')
         .order('date', { ascending: false })
         .order('created_at', { ascending: false });
-      if (!error) { transactions = data; render(); }
+      if (!error) { transactions = data; render(); renderChart(); }
     }
 
     function setType(type) {
@@ -597,6 +641,75 @@
           </div>
         </div>
       `).join('');
+    }
+
+    let chart = null;
+    let chartMode = 'monthly';
+
+    function setChartMode(mode, el) {
+      chartMode = mode;
+      document.querySelectorAll('.chart-tab').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      renderChart();
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('myChart').getContext('2d');
+      if (chart) chart.destroy();
+
+      if (chartMode === 'monthly') {
+        // 최근 6개월 수입/지출
+        const months = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          months.push(d.toISOString().slice(0, 7)); // YYYY-MM
+        }
+
+        const incomeData  = months.map(m => transactions.filter(t => t.type === 'income'  && t.date.startsWith(m)).reduce((s, t) => s + Number(t.amount), 0));
+        const expenseData = months.map(m => transactions.filter(t => t.type === 'expense' && t.date.startsWith(m)).reduce((s, t) => s + Number(t.amount), 0));
+        const labels = months.map(m => m.slice(2)); // YY-MM
+
+        chart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [
+              { label: '💚 수입', data: incomeData,  backgroundColor: 'rgba(110,231,183,0.7)', borderRadius: 8 },
+              { label: '🩷 지출', data: expenseData, backgroundColor: 'rgba(255,110,180,0.7)', borderRadius: 8 }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { labels: { font: { family: 'Jua, sans-serif', size: 12 }, color: '#4a1942' } } },
+            scales: {
+              x: { grid: { display: false }, ticks: { color: '#9d6b9a', font: { family: 'Jua' } } },
+              y: { grid: { color: 'rgba(255,110,180,0.08)' }, ticks: { color: '#9d6b9a', font: { family: 'Jua' }, callback: v => '₩' + v.toLocaleString('ko-KR') } }
+            }
+          }
+        });
+
+      } else {
+        // 카테고리별 지출
+        const cats = ['식비','교통','쇼핑','의료','문화','급여','용돈','기타'];
+        const data = cats.map(c => transactions.filter(t => t.category === c).reduce((s, t) => s + Number(t.amount), 0)).filter((_, i) => true);
+        const colors = ['#ff6eb4','#c084fc','#fb923c','#6ee7b7','#fde047','#60a5fa','#f472b6','#a78bfa'];
+
+        chart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: cats.map((c, i) => icons[c] + ' ' + c),
+            datasets: [{ data, backgroundColor: colors, borderWidth: 2, borderColor: '#fff' }]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'right', labels: { font: { family: 'Jua', size: 11 }, color: '#4a1942', boxWidth: 14 } },
+              tooltip: { callbacks: { label: ctx => ' ₩' + Number(ctx.raw).toLocaleString('ko-KR') } }
+            }
+          }
+        });
+      }
     }
 
     loadTransactions();
