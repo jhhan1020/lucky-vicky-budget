@@ -481,8 +481,13 @@
 
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    let transactions = JSON.parse(localStorage.getItem('ggm-lucky-v2') || '[]');
+    const SUPABASE_URL  = 'https://ktxribajxuxawjqfylfo.supabase.co';
+    const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0eHJpYmFqeHV4YXdqcWZ5bGZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE0NzkxMzYsImV4cCI6MjA5NzA1NTEzNn0.g12wnoWBG5NDCv31FzKWPWE3vevmeSQzthQEalXGRWY';
+    const db = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let transactions = [];
     let currentType = 'income';
     let currentFilter = 'all';
 
@@ -492,6 +497,15 @@
     };
 
     document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+    async function loadTransactions() {
+      const { data, error } = await db
+        .from('transactions')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (!error) { transactions = data; render(); }
+    }
 
     function setType(type) {
       currentType = type;
@@ -506,46 +520,58 @@
       render();
     }
 
-    function addTransaction() {
-      const desc   = document.getElementById('desc').value.trim();
-      const amount = parseFloat(document.getElementById('amount').value);
-      const cat    = document.getElementById('category').value;
-      const date   = document.getElementById('date').value;
+    async function addTransaction() {
+      const description = document.getElementById('desc').value.trim();
+      const amount      = parseFloat(document.getElementById('amount').value);
+      const category    = document.getElementById('category').value;
+      const date        = document.getElementById('date').value;
 
-      if (!desc)              { alert('🍀 내용을 입력해줘!'); return; }
+      if (!description)           { alert('🍀 내용을 입력해줘!'); return; }
       if (!amount || amount <= 0) { alert('✨ 금액을 제대로 입력해줘!'); return; }
-      if (!date)              { alert('📅 날짜를 골라줘!'); return; }
+      if (!date)                  { alert('📅 날짜를 골라줘!'); return; }
 
-      transactions.unshift({ id: Date.now(), type: currentType, desc, amount, category: cat, date });
-      save();
-      document.getElementById('desc').value   = '';
-      document.getElementById('amount').value = '';
+      const btn = document.querySelector('.add-btn');
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+
+      const { error } = await db.from('transactions').insert([{
+        type: currentType, description, amount, category, date
+      }]);
+
+      btn.disabled = false;
+      btn.textContent = '🍀 럭키하게 추가!';
+
+      if (!error) {
+        document.getElementById('desc').value   = '';
+        document.getElementById('amount').value = '';
+        await loadTransactions();
+      } else {
+        alert('저장 실패 😢 다시 시도해줘!');
+      }
     }
 
-    function deleteTransaction(id) {
-      transactions = transactions.filter(t => t.id !== id);
-      save();
+    async function deleteTransaction(id) {
+      await db.from('transactions').delete().eq('id', id);
+      await loadTransactions();
     }
 
-    function clearAll() {
+    async function clearAll() {
       if (!transactions.length) return;
-      if (confirm('🍀 정말 다 지울거야?')) { transactions = []; save(); }
+      if (confirm('🍀 정말 다 지울거야?')) {
+        await db.from('transactions').delete().neq('id', 0);
+        await loadTransactions();
+      }
     }
 
-    function save() {
-      localStorage.setItem('ggm-lucky-v2', JSON.stringify(transactions));
-      render();
-    }
-
-    function fmt(n) { return '₩' + n.toLocaleString('ko-KR'); }
+    function fmt(n) { return '₩' + Number(n).toLocaleString('ko-KR'); }
 
     function render() {
       const filtered = currentFilter === 'all'
         ? transactions
         : transactions.filter(t => t.type === currentFilter);
 
-      const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-      const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
+      const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
       const balance = income - expense;
 
       document.getElementById('balance').textContent       = fmt(balance);
@@ -562,7 +588,7 @@
         <div class="tx-item">
           <div class="tx-icon ${t.type}">${icons[t.category] || '📦'}</div>
           <div class="tx-info">
-            <div class="tx-desc">${t.desc}</div>
+            <div class="tx-desc">${t.description}</div>
             <div class="tx-meta">${t.date} · ${t.category}</div>
           </div>
           <div class="tx-right">
@@ -573,7 +599,7 @@
       `).join('');
     }
 
-    render();
+    loadTransactions();
   </script>
 </body>
 </html>
