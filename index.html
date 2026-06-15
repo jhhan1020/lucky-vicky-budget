@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🍀 럭키비키 가계부</title>
+  <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --pink: #ff6eb4;
+      --pink-light: #ffe0f0;
+      --pink-pale: #fff0f7;
+      --purple: #c084fc;
+      --purple-light: #f3e8ff;
+      --yellow: #fde047;
+      --yellow-light: #fefce8;
+      --mint: #6ee7b7;
+      --coral: #fb923c;
+      --white: #ffffff;
+      --text: #4a1942;
+      --text-soft: #9d6b9a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(135deg, #ffe0f0 0%, #f3e8ff 50%, #e0f2fe 100%);
+      min-height: 100vh;
+      padding: 24px 16px 48px;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* 배경 장식 */
+    body::before {
+      content: '';
+      position: fixed;
+      top: -80px; right: -80px;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, #ffb3d9 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      bottom: -80px; left: -80px;
+      width: 320px; height: 320px;
+      background: radial-gradient(circle, #c4b5fd 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 580px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 타이틀 */
+    .title-area {
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+
+    .title-area h1 {
+      font-family: 'Jua', sans-serif;
+      font-size: 2.2rem;
+      color: var(--pink);
+      text-shadow: 3px 3px 0 #fff, 5px 5px 0 #ffb3d9;
+      letter-spacing: 2px;
+    }
+
+    .title-area .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-soft);
+      margin-top: 4px;
+      letter-spacing: 1px;
+    }
+
+    /* 스파클 애니메이션 */
+    .sparkle {
+      display: inline-block;
+      animation: sparkle 1.5s ease-in-out infinite;
+    }
+    .sparkle:nth-child(2) { animation-delay: 0.3s; }
+    .sparkle:nth-child(3) { animation-delay: 0.6s; }
+
+    @keyframes sparkle {
+      0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+      50% { transform: scale(1.3) rotate(20deg); opacity: 0.7; }
+    }
+
+    /* 잔액 카드 */
+    .balance-card {
+      background: linear-gradient(135deg, #ff6eb4, #c084fc);
+      border-radius: 28px;
+      padding: 30px 28px;
+      color: white;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border: 3px solid white;
+      box-shadow: 0 8px 32px rgba(255, 110, 180, 0.35), 0 0 0 6px rgba(255,255,255,0.3);
+    }
+
+    .balance-card::before {
+      content: '🌸';
+      position: absolute;
+      top: 12px; right: 20px;
+      font-size: 2rem;
+      opacity: 0.4;
+      animation: float 3s ease-in-out infinite;
+    }
+    .balance-card::after {
+      content: '⭐';
+      position: absolute;
+      bottom: 14px; left: 20px;
+      font-size: 1.8rem;
+      opacity: 0.4;
+      animation: float 3s ease-in-out infinite 1.5s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); }
+      50% { transform: translateY(-6px) rotate(10deg); }
+    }
+
+    .balance-label {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
+      font-family: 'Jua', sans-serif;
+    }
+
+    .balance-amount {
+      font-family: 'Jua', sans-serif;
+      font-size: 2.6rem;
+      letter-spacing: -1px;
+      text-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+    }
+
+    .balance-summary {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 20px;
+    }
+
+    .bal-item {
+      background: rgba(255,255,255,0.25);
+      border-radius: 16px;
+      padding: 10px 20px;
+      text-align: center;
+      backdrop-filter: blur(4px);
+      border: 1.5px solid rgba(255,255,255,0.4);
+    }
+
+    .bal-item .bl { font-size: 0.72rem; opacity: 0.9; margin-bottom: 3px; letter-spacing: 1px; }
+    .bal-item .ba { font-family: 'Jua', sans-serif; font-size: 1.1rem; }
+    .bal-item.income .ba { color: #d1fae5; }
+    .bal-item.expense .ba { color: #ffe4e6; }
+
+    /* 카드 공통 */
+    .card {
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 24px;
+      padding: 24px;
+      border: 2px solid rgba(255, 110, 180, 0.15);
+      box-shadow: 0 4px 20px rgba(192, 132, 252, 0.12);
+      backdrop-filter: blur(8px);
+    }
+
+    .card-title {
+      font-family: 'Jua', sans-serif;
+      font-size: 1.05rem;
+      color: var(--pink);
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* 수입/지출 토글 */
+    .type-toggle {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      background: var(--pink-light);
+      border-radius: 18px;
+      padding: 5px;
+    }
+
+    .type-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 14px;
+      background: transparent;
+      font-family: 'Jua', sans-serif;
+      font-size: 0.95rem;
+      cursor: pointer;
+      color: var(--text-soft);
+      transition: all 0.25s;
+    }
+
+    .type-btn.income.active {
+      background: white;
+      color: #059669;
+      box-shadow: 0 3px 10px rgba(5, 150, 105, 0.2);
+    }
+
+    .type-btn.expense.active {
+      background: white;
+      color: var(--pink);
+      box-shadow: 0 3px 10px rgba(255, 110, 180, 0.25);
+    }
+
+    /* 입력 필드 */
+    .form-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .form-row input, .form-row select {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #fce7f3;
+      border-radius: 16px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: white;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .form-row input:focus, .form-row select:focus {
+      border-color: var(--pink);
+      box-shadow: 0 0 0 3px rgba(255, 110, 180, 0.12);
+    }
+
+    .form-row input::placeholder { color: #d8b4d8; }
+
+    /* 추가 버튼 */
+    .add-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #ff6eb4, #c084fc);
+      color: white;
+      border: none;
+      border-radius: 18px;
+      font-family: 'Jua', sans-serif;
+      font-size: 1.05rem;
+      cursor: pointer;
+      letter-spacing: 1px;
+      box-shadow: 0 6px 20px rgba(255, 110, 180, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+
+    .add-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(255, 110, 180, 0.45); }
+    .add-btn:active { transform: translateY(0); }
+
+    /* 필터 */
+    .filter-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    .filter-btn {
+      padding: 6px 16px;
+      border: 2px solid #fce7f3;
+      border-radius: 20px;
+      background: white;
+      font-family: 'Jua', sans-serif;
+      font-size: 0.82rem;
+      color: var(--text-soft);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+      background: linear-gradient(135deg, #ff6eb4, #c084fc);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 3px 10px rgba(255, 110, 180, 0.3);
+    }
+
+    /* 목록 헤더 */
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .clear-btn {
+      font-size: 0.78rem;
+      color: #d8b4d8;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+    .clear-btn:hover { color: var(--pink); }
+
+    /* 거래 아이템 */
+    .transaction-list { display: flex; flex-direction: column; gap: 8px; }
+
+    .tx-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      background: linear-gradient(135deg, rgba(255,240,247,0.8), rgba(243,232,255,0.6));
+      border-radius: 18px;
+      border: 1.5px solid rgba(255, 110, 180, 0.12);
+      transition: transform 0.15s;
+      animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .tx-item:hover { transform: translateX(3px); }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.9) translateY(-8px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .tx-icon {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+      border: 2px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .tx-icon.income  { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+    .tx-icon.expense { background: linear-gradient(135deg, #ffe4e6, #fecdd3); }
+
+    .tx-info { flex: 1; }
+    .tx-desc { font-size: 0.92rem; font-weight: 700; color: var(--text); }
+    .tx-meta { font-size: 0.73rem; color: var(--text-soft); margin-top: 2px; }
+
+    .tx-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+
+    .tx-amount {
+      font-family: 'Jua', sans-serif;
+      font-size: 1rem;
+    }
+    .tx-amount.income  { color: #059669; }
+    .tx-amount.expense { color: var(--pink); }
+
+    .tx-del {
+      background: none; border: none;
+      color: #e8c4e8; cursor: pointer;
+      font-size: 0.9rem; line-height: 1;
+      transition: color 0.15s;
+    }
+    .tx-del:hover { color: var(--pink); }
+
+    .empty-msg {
+      text-align: center;
+      padding: 36px 0;
+      color: var(--text-soft);
+      font-family: 'Jua', sans-serif;
+      font-size: 0.95rem;
+      opacity: 0.7;
+    }
+
+    /* 행운 뱃지 */
+    .lucky-badge {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 4px 0;
+    }
+
+    .badge {
+      background: white;
+      border: 2px solid #fce7f3;
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      color: var(--text-soft);
+      font-family: 'Jua', sans-serif;
+      box-shadow: 0 2px 8px rgba(255,110,180,0.1);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- 타이틀 -->
+    <div class="title-area">
+      <h1>
+        <span class="sparkle">🍀</span>
+        럭키비키 가계부
+        <span class="sparkle">✨</span>
+      </h1>
+      <div class="subtitle">오늘도 럭키하게 돈 관리! 💖</div>
+    </div>
+
+    <!-- 행운 뱃지 -->
+    <div class="lucky-badge">
+      <span class="badge">🌈 오늘도 행운가득</span>
+      <span class="badge">🎀 소비도 럭키하게</span>
+      <span class="badge">⭐ 저축왕 도전중</span>
+    </div>
+
+    <!-- 잔액 카드 -->
+    <div class="balance-card">
+      <div class="balance-label">🍀 현재 잔액 🍀</div>
+      <div class="balance-amount" id="balance">₩0</div>
+      <div class="balance-summary">
+        <div class="bal-item income">
+          <div class="bl">💚 총 수입</div>
+          <div class="ba" id="total-income">₩0</div>
+        </div>
+        <div class="bal-item expense">
+          <div class="bl">🩷 총 지출</div>
+          <div class="ba" id="total-expense">₩0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 입력 폼 -->
+    <div class="card">
+      <div class="card-title">✨ 새 항목 추가하기</div>
+
+      <div class="type-toggle">
+        <button class="type-btn income active" id="btn-income" onclick="setType('income')">💚 수입</button>
+        <button class="type-btn expense" id="btn-expense" onclick="setType('expense')">🩷 지출</button>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="desc" placeholder="어디에 썼나요? (예: 탕수육)" maxlength="30">
+      </div>
+      <div class="form-row">
+        <input type="number" id="amount" placeholder="얼마?" min="0">
+        <select id="category">
+          <option value="식비">🍱 식비</option>
+          <option value="교통">🚌 교통</option>
+          <option value="쇼핑">🛍 쇼핑</option>
+          <option value="의료">💊 의료</option>
+          <option value="문화">🎬 문화</option>
+          <option value="급여">💰 급여</option>
+          <option value="용돈">🎁 용돈</option>
+          <option value="기타">📦 기타</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <input type="date" id="date">
+      </div>
+      <button class="add-btn" onclick="addTransaction()">🍀 럭키하게 추가!</button>
+    </div>
+
+    <!-- 거래 목록 -->
+    <div class="card">
+      <div class="list-header">
+        <div class="card-title" style="margin-bottom:0">🌸 거래 내역</div>
+        <button class="clear-btn" onclick="clearAll()">전체 삭제</button>
+      </div>
+      <div class="filter-row">
+        <button class="filter-btn active" onclick="setFilter('all', this)">🌈 전체</button>
+        <button class="filter-btn" onclick="setFilter('income', this)">💚 수입</button>
+        <button class="filter-btn" onclick="setFilter('expense', this)">🩷 지출</button>
+      </div>
+      <div class="transaction-list" id="tx-list"></div>
+    </div>
+
+  </div>
+
+  <script>
+    let transactions = JSON.parse(localStorage.getItem('ggm-lucky-v2') || '[]');
+    let currentType = 'income';
+    let currentFilter = 'all';
+
+    const icons = {
+      '식비':'🍱','교통':'🚌','쇼핑':'🛍','의료':'💊',
+      '문화':'🎬','급여':'💰','용돈':'🎁','기타':'📦'
+    };
+
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+    function setType(type) {
+      currentType = type;
+      document.getElementById('btn-income').classList.toggle('active', type === 'income');
+      document.getElementById('btn-expense').classList.toggle('active', type === 'expense');
+    }
+
+    function setFilter(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      el.classList.add('active');
+      render();
+    }
+
+    function addTransaction() {
+      const desc   = document.getElementById('desc').value.trim();
+      const amount = parseFloat(document.getElementById('amount').value);
+      const cat    = document.getElementById('category').value;
+      const date   = document.getElementById('date').value;
+
+      if (!desc)              { alert('🍀 내용을 입력해줘!'); return; }
+      if (!amount || amount <= 0) { alert('✨ 금액을 제대로 입력해줘!'); return; }
+      if (!date)              { alert('📅 날짜를 골라줘!'); return; }
+
+      transactions.unshift({ id: Date.now(), type: currentType, desc, amount, category: cat, date });
+      save();
+      document.getElementById('desc').value   = '';
+      document.getElementById('amount').value = '';
+    }
+
+    function deleteTransaction(id) {
+      transactions = transactions.filter(t => t.id !== id);
+      save();
+    }
+
+    function clearAll() {
+      if (!transactions.length) return;
+      if (confirm('🍀 정말 다 지울거야?')) { transactions = []; save(); }
+    }
+
+    function save() {
+      localStorage.setItem('ggm-lucky-v2', JSON.stringify(transactions));
+      render();
+    }
+
+    function fmt(n) { return '₩' + n.toLocaleString('ko-KR'); }
+
+    function render() {
+      const filtered = currentFilter === 'all'
+        ? transactions
+        : transactions.filter(t => t.type === currentFilter);
+
+      const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+      const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+      const balance = income - expense;
+
+      document.getElementById('balance').textContent       = fmt(balance);
+      document.getElementById('total-income').textContent  = fmt(income);
+      document.getElementById('total-expense').textContent = fmt(expense);
+
+      const list = document.getElementById('tx-list');
+      if (!filtered.length) {
+        list.innerHTML = '<div class="empty-msg">🌸 아직 내역이 없어~<br>첫 항목을 추가해봐! ✨</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(t => `
+        <div class="tx-item">
+          <div class="tx-icon ${t.type}">${icons[t.category] || '📦'}</div>
+          <div class="tx-info">
+            <div class="tx-desc">${t.desc}</div>
+            <div class="tx-meta">${t.date} · ${t.category}</div>
+          </div>
+          <div class="tx-right">
+            <div class="tx-amount ${t.type}">${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}</div>
+            <button class="tx-del" onclick="deleteTransaction(${t.id})">✕</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    render();
+  </script>
+</body>
+</html>
