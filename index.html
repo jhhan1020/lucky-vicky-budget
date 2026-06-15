@@ -273,7 +273,12 @@
       display: flex;
       gap: 8px;
       margin-bottom: 14px;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      padding-bottom: 4px;
+      scrollbar-width: none;
     }
+    .filter-row::-webkit-scrollbar { display: none; }
 
     .filter-btn {
       padding: 6px 16px;
@@ -514,10 +519,18 @@
         <div class="card-title" style="margin-bottom:0">🌸 거래 내역</div>
         <button class="clear-btn" onclick="clearAll()">전체 삭제</button>
       </div>
-      <div class="filter-row">
+      <div class="filter-row" id="cat-tabs" style="overflow-x:auto; padding-bottom:4px; flex-wrap:nowrap;">
         <button class="filter-btn active" onclick="setFilter('all', this)">🌈 전체</button>
         <button class="filter-btn" onclick="setFilter('income', this)">💚 수입</button>
         <button class="filter-btn" onclick="setFilter('expense', this)">🩷 지출</button>
+        <button class="filter-btn" onclick="setFilter('cat:식비', this)">🍱 식비</button>
+        <button class="filter-btn" onclick="setFilter('cat:교통', this)">🚌 교통</button>
+        <button class="filter-btn" onclick="setFilter('cat:쇼핑', this)">🛍 쇼핑</button>
+        <button class="filter-btn" onclick="setFilter('cat:의료', this)">💊 의료</button>
+        <button class="filter-btn" onclick="setFilter('cat:문화', this)">🎬 문화</button>
+        <button class="filter-btn" onclick="setFilter('cat:급여', this)">💰 급여</button>
+        <button class="filter-btn" onclick="setFilter('cat:용돈', this)">🎁 용돈</button>
+        <button class="filter-btn" onclick="setFilter('cat:기타', this)">📦 기타</button>
       </div>
       <div class="transaction-list" id="tx-list"></div>
     </div>
@@ -559,7 +572,7 @@
 
     function setFilter(filter, el) {
       currentFilter = filter;
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#cat-tabs .filter-btn').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       render();
     }
@@ -612,7 +625,9 @@
     function render() {
       const filtered = currentFilter === 'all'
         ? transactions
-        : transactions.filter(t => t.type === currentFilter);
+        : currentFilter.startsWith('cat:')
+          ? transactions.filter(t => t.category === currentFilter.slice(4))
+          : transactions.filter(t => t.type === currentFilter);
 
       const income  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0);
       const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0);
